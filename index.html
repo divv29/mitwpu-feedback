@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIT-WPU | Teacher Feedback System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: linear-gradient(135deg, #EBF4FF 0%, #DBEAFE 40%, #E0EEFF 100%); }
+    .page-outer { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; }
+    .login-box { width: 100%; max-width: 460px; background: rgba(255,255,255,0.93); backdrop-filter: blur(30px); border-radius: 32px; box-shadow: 0 24px 60px rgba(0,48,135,0.18); border: 1px solid rgba(255,255,255,0.8); padding: 48px 40px; animation: fadeInUp 0.6s ease; }
+    .logo-wrap { text-align: center; margin-bottom: 24px; }
+    .logo-wrap img { height: 64px; width: auto; object-fit: contain; }
+    .login-title { text-align: center; margin-bottom: 24px; }
+    .login-title h1 { font-size: 22px; font-weight: 800; color: #003087; letter-spacing: -0.5px; }
+    .login-title p { font-size: 13px; color: #6B7280; margin-top: 4px; }
+    .form-hidden { display: none; }
+    .footer-note { text-align: center; font-size: 12px; color: #9CA3AF; margin-top: 24px; }
+    .footer-note strong { color: #003087; }
+  </style>
+</head>
+<body data-page="login">
+
+<div class="page-outer">
+  <!-- Background blobs -->
+  <div style="position:fixed;width:500px;height:500px;background:radial-gradient(circle,rgba(0,85,212,0.1) 0%,transparent 70%);top:-150px;right:-150px;border-radius:50%;pointer-events:none;z-index:0;"></div>
+  <div style="position:fixed;width:350px;height:350px;background:radial-gradient(circle,rgba(0,48,135,0.07) 0%,transparent 70%);bottom:-80px;left:-80px;border-radius:50%;pointer-events:none;z-index:0;"></div>
+
+  <div class="login-box" style="position:relative;z-index:1;">
+    <div class="logo-wrap">
+      <img src="assets/logo.webp" alt="MIT-WPU Logo">
+    </div>
+
+    <div class="login-title">
+      <h1>Teacher Feedback System</h1>
+      <p>BCA Science · 4th Semester · VYAS Building</p>
+    </div>
+
+    <div class="tab-toggle">
+      <button class="active" data-tab="login">Sign In</button>
+      <button data-tab="register">Create Account</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <div class="error-msg" id="loginError"></div>
+      <div class="form-group">
+        <label>Institute Email</label>
+        <div class="input-icon-wrap">
+          <span class="icon">✉️</span>
+          <input type="email" id="loginEmail" placeholder="yourname@mitwpu.edu.in" autocomplete="email" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-icon-wrap">
+          <span class="icon">🔒</span>
+          <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;" form="loginFormEl">Sign In</button>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerForm" class="form-hidden">
+      <div class="error-msg" id="registerError"></div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <div class="input-icon-wrap">
+          <span class="icon">👤</span>
+          <input type="text" id="regName" placeholder="Your full name" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Institute Email</label>
+        <div class="input-icon-wrap">
+          <span class="icon">✉️</span>
+          <input type="email" id="regEmail" placeholder="yourname@mitwpu.edu.in" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-icon-wrap">
+          <span class="icon">🔒</span>
+          <input type="password" id="regPassword" placeholder="Create a password (min. 6 chars)" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <div class="input-icon-wrap">
+          <span class="icon">🔒</span>
+          <input type="password" id="regConfirm" placeholder="Re-enter your password" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;">Create Account</button>
+    </div>
+
+    <p class="footer-note">🔒 Only <strong>@mitwpu.edu.in</strong> emails allowed · Feedback is anonymous</p>
+  </div>
+</div>
+
+<script src="js/questions.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Re-wire forms since they aren't real <form> elements
+  document.addEventListener('DOMContentLoaded', () => {
+    const loginEmailEl = document.getElementById('loginEmail');
+    const loginPasswordEl = document.getElementById('loginPassword');
+    const loginSection = document.getElementById('loginForm');
+    const registerSection = document.getElementById('registerForm');
+
+    // Make the button inside loginForm actually submit
+    const loginBtn = loginSection.querySelector('button');
+    loginBtn.addEventListener('click', async () => {
+      const email = loginEmailEl.value.trim();
+      const password = loginPasswordEl.value;
+      const errorEl = document.getElementById('loginError');
+
+      if (!email.endsWith('@mitwpu.edu.in')) {
+        errorEl.textContent = 'Only @mitwpu.edu.in email addresses are allowed.';
+        errorEl.classList.add('show');
+        return;
+      }
+      if (!password) {
+        errorEl.textContent = 'Please enter your password.';
+        errorEl.classList.add('show');
+        return;
+      }
+
+      errorEl.classList.remove('show');
+      setLoading(loginBtn, true);
+      const res = await login(email, password);
+      setLoading(loginBtn, false);
+
+      if (res.error) {
+        errorEl.textContent = res.error;
+        errorEl.classList.add('show');
+      } else {
+        window.location.href = res.redirect;
+      }
+    });
+
+    loginEmailEl.addEventListener('keydown', e => { if (e.key === 'Enter') loginBtn.click(); });
+    loginPasswordEl.addEventListener('keydown', e => { if (e.key === 'Enter') loginBtn.click(); });
+
+    const regBtn = registerSection.querySelector('button');
+    regBtn.addEventListener('click', async () => {
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const confirm = document.getElementById('regConfirm').value;
+      const errorEl = document.getElementById('registerError');
+
+      if (!email.endsWith('@mitwpu.edu.in')) {
+        errorEl.textContent = 'Only @mitwpu.edu.in email addresses are allowed.'; errorEl.classList.add('show'); return;
+      }
+      if (password !== confirm) {
+        errorEl.textContent = 'Passwords do not match.'; errorEl.classList.add('show'); return;
+      }
+      if (password.length < 6) {
+        errorEl.textContent = 'Password must be at least 6 characters.'; errorEl.classList.add('show'); return;
+      }
+
+      errorEl.classList.remove('show');
+      setLoading(regBtn, true);
+      const res = await register(name, email, password);
+      setLoading(regBtn, false);
+
+      if (res.error) { errorEl.textContent = res.error; errorEl.classList.add('show'); }
+      else { window.location.href = res.redirect; }
+    });
+  });
+</script>
+</body>
+</html>

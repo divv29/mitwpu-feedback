@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIT-WPU | Give Feedback</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: linear-gradient(160deg, #F0F7FF 0%, #F9FAFB 60%); }
+  </style>
+</head>
+<body data-page="feedback">
+
+<!-- Top Nav -->
+<div class="logo-bar">
+  <img src="assets/logo.webp" alt="MIT-WPU Logo">
+  <div class="nav-right">
+    <a href="dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+  </div>
+</div>
+
+<!-- Feedback Wrap -->
+<div class="feedback-wrap">
+
+  <div class="feedback-header">
+    <h2 id="subjectTitle">Subject Name</h2>
+    <p id="teacherTitle">Teacher: —</p>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-container">
+    <div class="progress-meta">
+      <span id="progressLabel">Question 1 of 15</span>
+      <span id="setLabel">Set 1: Teaching Effectiveness</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:6.67%"></div>
+    </div>
+  </div>
+
+  <!-- Question Card -->
+  <div class="question-card" id="questionCard">
+    <div class="q-num" id="qNum">Question 1</div>
+    <div class="q-text" id="qText">Loading question...</div>
+    <div class="options-list" id="optionsList"></div>
+
+    <div class="q-nav">
+      <button class="btn btn-ghost" id="prevBtn" style="visibility:hidden;">← Previous</button>
+      <button class="btn btn-primary" id="nextBtn">Next →</button>
+    </div>
+  </div>
+
+  <!-- Auto-save notice -->
+  <p style="text-align:center;font-size:12px;color:#9CA3AF;margin-top:16px;">💾 Answers are auto-saved as you go</p>
+
+</div>
+
+<script src="js/questions.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Verify session on load
+  document.addEventListener('DOMContentLoaded', async () => {
+    const session = await checkSession();
+    if (!session.authenticated) window.location.href = 'index.html';
+  });
+</script>
+</body>
+</html>

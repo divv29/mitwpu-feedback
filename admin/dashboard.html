@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIT-WPU | Admin Dashboard</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    .admin-layout { display:flex; min-height:100vh; }
+    .full-table-card { background:white; border-radius:16px; padding:24px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border:1px solid #F3F4F6; margin-bottom:24px; }
+    .full-table-card h3 { font-size:16px; font-weight:700; margin-bottom:20px; }
+    .detail-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; display:none; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+    .detail-overlay.show { display:flex; }
+    .detail-modal { background:white; border-radius:24px; padding:40px; max-width:700px; width:90%; max-height:85vh; overflow-y:auto; box-shadow:0 24px 60px rgba(0,0,0,0.2); animation:fadeInUp 0.3s ease; }
+    .modal-close { position:absolute; top:16px; right:20px; background:none; border:none; font-size:24px; cursor:pointer; color:#6B7280; }
+    .cat-scores { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0; }
+    .cat-score-card { background:#F9FAFB; border-radius:12px; padding:16px; text-align:center; }
+    .cat-score-card .val { font-size:28px; font-weight:800; color:#003087; }
+    .cat-score-card .lbl { font-size:11px; color:#6B7280; font-weight:600; text-transform:uppercase; margin-top:4px; }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      <img src="../assets/logo.webp" alt="MIT-WPU Logo" onerror="this.style.display='none';this.nextSibling.style.display='block'" style="display:block;">
+      <span style="display:none;font-size:15px;font-weight:800;color:#003087;letter-spacing:-0.5px;">MIT-WPU</span>
+      <p>Admin Dashboard</p>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#overview" class="active" onclick="showTab('overview',this)">
+        <span class="nav-icon">📊</span> Overview
+      </a>
+      <a href="#teachers" onclick="showTab('teachers',this)">
+        <span class="nav-icon">👨‍🏫</span> Teacher Reports
+      </a>
+      <a href="#subjects" onclick="showTab('subjects',this)">
+        <span class="nav-icon">📚</span> Subject Analysis
+      </a>
+      <a href="#recent" onclick="showTab('recent',this)">
+        <span class="nav-icon">🕐</span> Recent Feedback
+      </a>
+      <a href="../index.html" style="margin-top:auto;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;">
+        <span class="nav-icon">🚪</span> Sign Out
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="admin-main">
+
+    <!-- Top Bar -->
+    <div class="admin-topbar">
+      <h1 id="pageTitle">Overview</h1>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <a href="../php/admin.php?action=export_csv" class="btn btn-outline btn-sm">⬇ Export CSV</a>
+        <div class="user-pill" style="background:#EFF6FF;color:#003087;padding:8px 16px;border-radius:50px;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;">
+          <div style="width:28px;height:28px;background:linear-gradient(135deg,#0055D4,#003087);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;">AD</div>
+          Admin
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== OVERVIEW TAB ===== -->
+    <div id="tab-overview">
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-icon" style="background:#EFF6FF;font-size:22px;">📋</div><div><h3 id="statFeedback">—</h3><p>Total Feedback</p></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#ECFDF5;font-size:22px;">🎓</div><div><h3 id="statStudents">—</h3><p>Students</p></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#FFF7ED;font-size:22px;">👨‍🏫</div><div><h3 id="statTeachers">—</h3><p>Teachers</p></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#FDF4FF;font-size:22px;">⭐</div><div><h3 id="statAvg">—</h3><p>Avg. Score</p></div></div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Teacher Performance Overview</h3>
+          <canvas id="teacherBarChart" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Category Breakdown</h3>
+          <canvas id="categoryPieChart" height="220"></canvas>
+        </div>
+      </div>
+
+      <!-- Subject Chart -->
+      <div class="chart-card" style="margin-bottom:24px;">
+        <h3>Subject-wise Average Scores</h3>
+        <canvas id="subjectChart" height="120"></canvas>
+      </div>
+    </div>
+
+    <!-- ===== TEACHERS TAB ===== -->
+    <div id="tab-teachers" style="display:none;">
+      <div class="filters-row">
+        <select id="teacherFilter" onchange="loadTeacherDetail()">
+          <option value="">All Teachers</option>
+        </select>
+      </div>
+
+      <div class="full-table-card">
+        <h3>Teacher Performance Summary</h3>
+        <table class="admin-table" id="teacherTable">
+          <thead>
+            <tr>
+              <th>Teacher</th>
+              <th>Teaching</th>
+              <th>Personality</th>
+              <th>Assessment</th>
+              <th>Overall</th>
+              <th>Responses</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="teacherTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== SUBJECTS TAB ===== -->
+    <div id="tab-subjects" style="display:none;">
+      <div class="full-table-card">
+        <h3>Subject-wise Feedback Summary</h3>
+        <table class="admin-table">
+          <thead><tr><th>Subject</th><th>Code</th><th>Avg. Score</th><th>Performance</th><th>Responses</th></tr></thead>
+          <tbody id="subjectTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== RECENT TAB ===== -->
+    <div id="tab-recent" style="display:none;">
+      <div class="full-table-card">
+        <h3>Recent Feedback Submissions</h3>
+        <table class="admin-table">
+          <thead><tr><th>Student</th><th>Teacher</th><th>Subject</th><th>Score</th><th>Date</th></tr></thead>
+          <tbody id="recentTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Teacher Detail Modal -->
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-modal" style="position:relative;">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 id="modalTeacherName" style="font-size:22px;font-weight:800;color:#003087;margin-bottom:4px;"></h2>
+    <p id="modalDept" style="font-size:14px;color:#6B7280;margin-bottom:24px;"></p>
+
+    <div class="cat-scores">
+      <div class="cat-score-card"><div class="val" id="mSet1">—</div><div class="lbl">Teaching</div></div>
+      <div class="cat-score-card"><div class="val" id="mSet2">—</div><div class="lbl">Personality</div></div>
+      <div class="cat-score-card"><div class="val" id="mSet3">—</div><div class="lbl">Assessment</div></div>
+    </div>
+
+    <canvas id="modalRadar" height="200" style="margin-bottom:20px;"></canvas>
+
+    <div class="insights-grid" id="insightsGrid"></div>
+  </div>
+</div>
+
+<script src="../js/questions.js"></script>
+<script>
+  let overviewData = null;
+  let barChart = null, pieChart = null, subChart = null, radarChart = null;
+
+  // ===== TABS =====
+  function showTab(name, el) {
+    document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
+    document.getElementById('tab-' + name).style.display = 'block';
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    el.classList.add('active');
+    const titles = { overview: 'Overview', teachers: 'Teacher Reports', subjects: 'Subject Analysis', recent: 'Recent Feedback' };
+    document.getElementById('pageTitle').textContent = titles[name] || 'Dashboard';
+    return false;
+  }
+
+  // ===== LOAD OVERVIEW =====
+  async function loadOverview() {
+    const res = await fetch('../php/admin.php?action=overview');
+    const data = await res.json();
+    overviewData = data;
+
+    // Stats
+    document.getElementById('statFeedback').textContent = data.stats.total_feedback;
+    document.getElementById('statStudents').textContent = data.stats.total_students;
+    document.getElementById('statTeachers').textContent = data.stats.total_teachers;
+    document.getElementById('statAvg').textContent = (data.stats.avg_score || 0) + '%';
+
+    // Teacher bar chart
+    const tLabels = data.teacher_avgs.map(t => t.teacher.replace('Prof. ', ''));
+    const tScores = data.teacher_avgs.map(t => t.avg_overall || 0);
+
+    if (barChart) barChart.destroy();
+    barChart = new Chart(document.getElementById('teacherBarChart'), {
+      type: 'bar',
+      data: {
+        labels: tLabels,
+        datasets: [{
+          label: 'Overall Score (%)',
+          data: tScores,
+          backgroundColor: tScores.map(s => s >= 75 ? '#3B82F6' : s >= 50 ? '#F59E0B' : '#EF4444'),
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { min: 0, max: 100, grid: { color: '#F3F4F6' }, ticks: { callback: v => v + '%' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // Category pie chart
+    const allAvgs = data.teacher_avgs.filter(t => t.avg_set1);
+    const avgS1 = allAvgs.reduce((a, b) => a + parseFloat(b.avg_set1 || 0), 0) / (allAvgs.length || 1);
+    const avgS2 = allAvgs.reduce((a, b) => a + parseFloat(b.avg_set2 || 0), 0) / (allAvgs.length || 1);
+    const avgS3 = allAvgs.reduce((a, b) => a + parseFloat(b.avg_set3 || 0), 0) / (allAvgs.length || 1);
+
+    if (pieChart) pieChart.destroy();
+    pieChart = new Chart(document.getElementById('categoryPieChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Teaching Effectiveness', 'Personality & Body Lang.', 'Assessment & Support'],
+        datasets: [{
+          data: [avgS1.toFixed(1), avgS2.toFixed(1), avgS3.toFixed(1)],
+          backgroundColor: ['#3B82F6', '#10B981', '#F59E0B'],
+          borderWidth: 0,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 12 } } } }
+      }
+    });
+
+    // Subject chart
+    const sLabels = data.subject_avgs.map(s => s.subject.replace(' Programming', '').replace('Project Based Learning', 'PBL').replace('Mini Project', 'Mini Proj'));
+    const sScores = data.subject_avgs.map(s => s.avg_score || 0);
+
+    if (subChart) subChart.destroy();
+    subChart = new Chart(document.getElementById('subjectChart'), {
+      type: 'bar',
+      data: {
+        labels: sLabels,
+        datasets: [{
+          label: 'Avg Score (%)',
+          data: sScores,
+          backgroundColor: '#DBEAFE',
+          borderColor: '#3B82F6',
+          borderWidth: 2,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { min: 0, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#F9FAFB' } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+
+    // Populate teacher table
+    const tbody = document.getElementById('teacherTableBody');
+    tbody.innerHTML = data.teacher_avgs.map(t => `
+      <tr>
+        <td><strong>${t.teacher}</strong></td>
+        <td>${t.avg_set1 || '—'}%</td>
+        <td>${t.avg_set2 || '—'}%</td>
+        <td>${t.avg_set3 || '—'}%</td>
+        <td><strong style="color:#003087;">${t.avg_overall || '—'}%</strong></td>
+        <td>${t.feedback_count}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="openTeacherDetail(${t.id})">View</button></td>
+      </tr>
+    `).join('');
+
+    // Populate subject table
+    const stbody = document.getElementById('subjectTableBody');
+    stbody.innerHTML = data.subject_avgs.map(s => {
+      const score = parseFloat(s.avg_score || 0);
+      const color = score >= 75 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444';
+      return `
+        <tr>
+          <td><strong>${s.subject}</strong></td>
+          <td style="color:#6B7280;">${s.code}</td>
+          <td><strong style="color:${color}">${score}%</strong></td>
+          <td>
+            <div class="score-bar">
+              <div class="score-bar-track"><div class="score-bar-fill" style="width:${score}%;background:${color};"></div></div>
+            </div>
+          </td>
+          <td>${s.count}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Recent table
+    const rtbody = document.getElementById('recentTableBody');
+    rtbody.innerHTML = (data.recent || []).map(r => `
+      <tr>
+        <td>${r.student}</td>
+        <td>${r.teacher}</td>
+        <td>${r.subject}</td>
+        <td><strong style="color:#003087;">${r.overall_score}%</strong></td>
+        <td style="color:#6B7280;font-size:13px;">${new Date(r.created_at).toLocaleDateString()}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;color:#9CA3AF;padding:32px;">No feedback yet</td></tr>';
+
+    // Populate teacher filter
+    const sel = document.getElementById('teacherFilter');
+    data.teacher_avgs.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.teacher;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function openTeacherDetail(teacherId) {
+    const res = await fetch('../php/admin.php?action=teacher_report&teacher_id=' + teacherId);
+    const data = await res.json();
+
+    if (!data.summary) {
+      alert('No feedback data for this teacher yet.');
+      return;
+    }
+
+    document.getElementById('modalTeacherName').textContent = data.teacher;
+    document.getElementById('modalDept').textContent = data.department + ' · ' + data.summary.count + ' responses';
+    document.getElementById('mSet1').textContent = data.summary.avg_set1 + '%';
+    document.getElementById('mSet2').textContent = data.summary.avg_set2 + '%';
+    document.getElementById('mSet3').textContent = data.summary.avg_set3 + '%';
+
+    // Radar chart
+    if (radarChart) radarChart.destroy();
+    radarChart = new Chart(document.getElementById('modalRadar'), {
+      type: 'radar',
+      data: {
+        labels: ['Teaching Effectiveness', 'Personality & Body Language', 'Assessment & Support'],
+        datasets: [{
+          label: 'Score',
+          data: [data.summary.avg_set1, data.summary.avg_set2, data.summary.avg_set3],
+          fill: true,
+          backgroundColor: 'rgba(0,85,212,0.15)',
+          borderColor: '#0055D4',
+          borderWidth: 2,
+          pointBackgroundColor: '#0055D4',
+          pointRadius: 6
+        }]
+      },
+      options: {
+        scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: '#E5E7EB' } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // Insights
+    const ig = document.getElementById('insightsGrid');
+    ig.innerHTML = `
+      <div class="insight-card strength">
+        <h4>✅ Strengths</h4>
+        <ul>${(data.summary.strengths || ['No data yet']).map(s => `<li>✓ ${s}</li>`).join('')}</ul>
+      </div>
+      <div class="insight-card weakness">
+        <h4>⚠️ Areas to Improve</h4>
+        <ul>${(data.summary.weaknesses || ['No data yet']).map(w => `<li>→ ${w}</li>`).join('')}</ul>
+      </div>
+    `;
+
+    document.getElementById('detailOverlay').classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('detailOverlay').classList.remove('show');
+  }
+
+  function loadTeacherDetail() {
+    const tid = document.getElementById('teacherFilter').value;
+    if (tid) openTeacherDetail(tid);
+  }
+
+  // Close modal on background click
+  document.getElementById('detailOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // ===== INIT =====
+  document.addEventListener('DOMContentLoaded', () => {
+    loadOverview();
+  });
+</script>
+</body>
+</html>
