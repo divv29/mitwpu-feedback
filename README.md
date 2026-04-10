@@ -4,7 +4,7 @@
 
 # 🎓 MIT-WPU Teacher Feedback System
 
-**A full-stack anonymous teacher feedback platform for BCA Science, 4th Semester**
+**A full-stack anonymous teacher feedback platform for BCA Science**
 
 [![PHP](https://img.shields.io/badge/PHP-7.4+-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
